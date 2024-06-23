@@ -147,30 +147,26 @@ def save_model(save_path, ed_state: EveryDreamTrainingState, global_step: int, s
     Save the model to disk
     """
 
-    def save_ckpt_file(diffusers_model_path, sd_ckpt_path, sd_ckpt_path2, vae, unet, te):
+    def save_ckpt_file(sd_ckpt_path, vae, unet, te):
         nonlocal save_ckpt_dir
         nonlocal save_full_precision
         nonlocal yaml_name
 
         if save_ckpt_dir is not None:
             sd_ckpt_full = os.path.join(save_ckpt_dir, sd_ckpt_path)
-            sd_ckpt_full2 = os.path.join(save_ckpt_dir, sd_ckpt_path2)
         else:
             sd_ckpt_full = os.path.join(os.curdir, sd_ckpt_path)
-            sd_ckpt_full2 = os.path.join(os.curdir, sd_ckpt_path2)
             save_ckpt_dir = os.curdir
 
         half = not save_full_precision
 
         print(f" * Saving SD model to {sd_ckpt_full}")
-        converter(model_path=diffusers_model_path, checkpoint_path=sd_ckpt_full, half=half)
-        print(f" * Saving SD model to {sd_ckpt_full2}")
-        converter_from_state(vae=vae, unet=unet, te=te, checkpoint_path=sd_ckpt_full2, half=half)
+        converter_from_state(vae=vae, unet=unet, te=te, checkpoint_path=sd_ckpt_full, half=half)
 
-        if yaml_name and yaml_name != "v1-inference.yaml":
-            yaml_save_path = f"{os.path.join(save_ckpt_dir, os.path.basename(diffusers_model_path))}.yaml"
-            print(f" * Saving yaml to {yaml_save_path}")
-            shutil.copyfile(yaml_name, yaml_save_path)
+        # if yaml_name and yaml_name != "v1-inference.yaml":
+        #     yaml_save_path = f"{os.path.join(save_ckpt_dir, os.path.basename(diffusers_model_path))}.yaml"
+        #     print(f" * Saving yaml to {yaml_save_path}")
+        #     shutil.copyfile(yaml_name, yaml_save_path)
 
 
     if global_step is None or global_step == 0:
@@ -178,44 +174,45 @@ def save_model(save_path, ed_state: EveryDreamTrainingState, global_step: int, s
         return
 
     if ed_state.unet_ema is not None or ed_state.text_encoder_ema is not None:
-        pipeline_ema = StableDiffusionPipeline(
-            vae=ed_state.vae,
-            text_encoder=ed_state.text_encoder_ema,
-            tokenizer=ed_state.tokenizer,
-            unet=ed_state.unet_ema,
-            scheduler=ed_state.scheduler,
-            safety_checker=None, # save vram
-            requires_safety_checker=None, # avoid nag
-            feature_extractor=None, # must be none of no safety checker
-        )
+        if save_optimizer_flag:
+            pipeline_ema = StableDiffusionPipeline(
+                vae=ed_state.vae,
+                text_encoder=ed_state.text_encoder_ema,
+                tokenizer=ed_state.tokenizer,
+                unet=ed_state.unet_ema,
+                scheduler=ed_state.scheduler,
+                safety_checker=None, # save vram
+                requires_safety_checker=None, # avoid nag
+                feature_extractor=None, # must be none of no safety checker
+            )
 
-        diffusers_model_path = save_path + "_ema"
-        print(f" * Saving diffusers EMA model to {diffusers_model_path}")
-        pipeline_ema.save_pretrained(diffusers_model_path)
+            diffusers_model_path = save_path + "_ema"
+            print(f" * Saving diffusers EMA model to {diffusers_model_path}")
+            pipeline_ema.save_pretrained(diffusers_model_path)
 
         if save_ckpt:
             sd_ckpt_path_ema = f"{os.path.basename(save_path)}_ema.safetensors"
-            sd_ckpt_path_ema2 = f"{os.path.basename(save_path)}_ema_fromstate.safetensors"
-            save_ckpt_file(diffusers_model_path, sd_ckpt_path_ema, sd_ckpt_path_ema2, ed_state.vae, ed_state.unet_ema, ed_state.text_encoder_ema)
+            save_ckpt_file(sd_ckpt_path_ema, ed_state.vae, ed_state.unet_ema, ed_state.text_encoder_ema)
 
 
-    pipeline = StableDiffusionPipeline(
-        vae=ed_state.vae,
-        text_encoder=ed_state.text_encoder,
-        tokenizer=ed_state.tokenizer,
-        unet=ed_state.unet,
-        scheduler=ed_state.scheduler,
-        safety_checker=None,  # save vram
-        requires_safety_checker=None,  # avoid nag
-        feature_extractor=None,  # must be none of no safety checker
-    )
-    diffusers_model_path = save_path
-    print(f" * Saving diffusers model to {diffusers_model_path}")
-    pipeline.save_pretrained(diffusers_model_path)
+    if save_optimizer_flag:
+        pipeline = StableDiffusionPipeline(
+            vae=ed_state.vae,
+            text_encoder=ed_state.text_encoder,
+            tokenizer=ed_state.tokenizer,
+            unet=ed_state.unet,
+            scheduler=ed_state.scheduler,
+            safety_checker=None,  # save vram
+            requires_safety_checker=None,  # avoid nag
+            feature_extractor=None,  # must be none of no safety checker
+        )
+        diffusers_model_path = save_path
+        print(f" * Saving diffusers model to {diffusers_model_path}")
+        pipeline.save_pretrained(diffusers_model_path)
+
     if save_ckpt:
         sd_ckpt_path = f"{os.path.basename(save_path)}.safetensors"
-        sd_ckpt_path2 = f"{os.path.basename(save_path)}_fromstate.safetensors"
-        save_ckpt_file(diffusers_model_path, sd_ckpt_path, sd_ckpt_path2, ed_state.vae, ed_state.unet, ed_state.text_encoder)
+        save_ckpt_file(sd_ckpt_path, ed_state.vae, ed_state.unet, ed_state.text_encoder)
 
     if save_optimizer_flag:
         print(f" Saving optimizer state to {save_path}")
