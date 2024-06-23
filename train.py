@@ -77,13 +77,13 @@ _VERY_LARGE_NUMBER = 1e9
 def get_training_noise_scheduler(train_sampler: str, model_root_folder, trained_betas=None):
     noise_scheduler = None
     if train_sampler.lower() == "pndm":
-        logging.info(f" * Using PNDM noise scheduler for training: {train_sampler}")
+        print(f" * Using PNDM noise scheduler for training: {train_sampler}")
         noise_scheduler = PNDMScheduler.from_pretrained(model_root_folder, subfolder="scheduler", trained_betas=trained_betas)
     elif train_sampler.lower() == "ddim":
-        logging.info(f" * Using DDIM noise scheduler for training: {train_sampler}")
+        print(f" * Using DDIM noise scheduler for training: {train_sampler}")
         noise_scheduler = DDIMScheduler.from_pretrained(model_root_folder, subfolder="scheduler", trained_betas=trained_betas)
     else:
-        logging.info(f" * Using default (DDPM) noise scheduler for training: {train_sampler}")
+        print(f" * Using default (DDPM) noise scheduler for training: {train_sampler}")
         noise_scheduler = DDPMScheduler.from_pretrained(model_root_folder, subfolder="scheduler", trained_betas=trained_betas)
     return noise_scheduler
 
@@ -98,15 +98,15 @@ def convert_to_hf(ckpt_path):
     if os.path.isfile(ckpt_path):
         if not os.path.exists(hf_cache):
             os.makedirs(hf_cache)
-            logging.info(f"Converting {ckpt_path} to Diffusers format")
+            print(f"Converting {ckpt_path} to Diffusers format")
             try:
                 import utils.convert_original_stable_diffusion_to_diffusers as convert
                 convert.convert(ckpt_path, f"ckpt_cache/{ckpt_path}")
             except:
-                logging.info("Please manually convert the checkpoint to Diffusers format (one time setup), see readme.")
+                print("Please manually convert the checkpoint to Diffusers format (one time setup), see readme.")
                 exit()
         else:
-            logging.info(f"Found cached checkpoint at {hf_cache}")
+            print(f"Found cached checkpoint at {hf_cache}")
 
         is_sd1attn, yaml = get_attn_yaml(hf_cache)
         return hf_cache, is_sd1attn, yaml
@@ -154,19 +154,22 @@ def save_model(save_path, ed_state: EveryDreamTrainingState, global_step: int, s
 
         if save_ckpt_dir is not None:
             sd_ckpt_full = os.path.join(save_ckpt_dir, sd_ckpt_path)
+            sd_ckpt_full2 = os.path.join(save_ckpt_dir, sd_ckpt_path2)
         else:
             sd_ckpt_full = os.path.join(os.curdir, sd_ckpt_path)
+            sd_ckpt_full2 = os.path.join(os.curdir, sd_ckpt_path2)
             save_ckpt_dir = os.curdir
 
         half = not save_full_precision
 
-        logging.info(f" * Saving SD model to {sd_ckpt_full}")
+        print(f" * Saving SD model to {sd_ckpt_full}")
         converter(model_path=diffusers_model_path, checkpoint_path=sd_ckpt_full, half=half)
-        converter_from_state(vae=vae, unet=unet, te=te, checkpoint_path=sd_ckpt_path2, half=half)
+        print(f" * Saving SD model to {sd_ckpt_full2}")
+        converter_from_state(vae=vae, unet=unet, te=te, checkpoint_path=sd_ckpt_full2, half=half)
 
         if yaml_name and yaml_name != "v1-inference.yaml":
             yaml_save_path = f"{os.path.join(save_ckpt_dir, os.path.basename(diffusers_model_path))}.yaml"
-            logging.info(f" * Saving yaml to {yaml_save_path}")
+            print(f" * Saving yaml to {yaml_save_path}")
             shutil.copyfile(yaml_name, yaml_save_path)
 
 
@@ -187,7 +190,7 @@ def save_model(save_path, ed_state: EveryDreamTrainingState, global_step: int, s
         )
 
         diffusers_model_path = save_path + "_ema"
-        logging.info(f" * Saving diffusers EMA model to {diffusers_model_path}")
+        print(f" * Saving diffusers EMA model to {diffusers_model_path}")
         pipeline_ema.save_pretrained(diffusers_model_path)
 
         if save_ckpt:
@@ -207,7 +210,7 @@ def save_model(save_path, ed_state: EveryDreamTrainingState, global_step: int, s
         feature_extractor=None,  # must be none of no safety checker
     )
     diffusers_model_path = save_path
-    logging.info(f" * Saving diffusers model to {diffusers_model_path}")
+    print(f" * Saving diffusers model to {diffusers_model_path}")
     pipeline.save_pretrained(diffusers_model_path)
     if save_ckpt:
         sd_ckpt_path = f"{os.path.basename(save_path)}.safetensors"
@@ -215,7 +218,7 @@ def save_model(save_path, ed_state: EveryDreamTrainingState, global_step: int, s
         save_ckpt_file(diffusers_model_path, sd_ckpt_path, sd_ckpt_path2, ed_state.vae, ed_state.unet, ed_state.text_encoder)
 
     if save_optimizer_flag:
-        logging.info(f" Saving optimizer state to {save_path}")
+        print(f" Saving optimizer state to {save_path}")
         ed_state.optimizer.save(save_path)
 
 
@@ -235,7 +238,7 @@ def setup_local_logger(args):
 
     print(f" logging to {logfilename}")
     logging.basicConfig(filename=logfilename,
-                        level=logging.INFO,
+                        level=print,
                         format="%(asctime)s %(message)s",
                         datefmt="%m/%d/%Y %I:%M:%S %p",
                        )
@@ -344,12 +347,12 @@ def setup_args(args):
         raise ValueError("Both unet and textenc are disabled, nothing to train")
 
     if args.resume_ckpt == "findlast":
-        logging.info(f"{Fore.LIGHTCYAN_EX} Finding last checkpoint in logdir: {args.logdir}{Style.RESET_ALL}")
+        print(f"{Fore.LIGHTCYAN_EX} Finding last checkpoint in logdir: {args.logdir}{Style.RESET_ALL}")
         # find the last checkpoint in the logdir
         args.resume_ckpt = find_last_checkpoint(args.logdir)
 
     if (args.ema_resume_model != None) and (args.ema_resume_model == "findlast"):
-        logging.info(f"{Fore.LIGHTCYAN_EX} Finding last EMA decay checkpoint in logdir: {args.logdir}{Style.RESET_ALL}")
+        print(f"{Fore.LIGHTCYAN_EX} Finding last EMA decay checkpoint in logdir: {args.logdir}{Style.RESET_ALL}")
 
         args.ema_resume_model = find_last_checkpoint(args.logdir, is_ema=True)
 
@@ -362,7 +365,7 @@ def setup_args(args):
     args.clip_skip = max(min(4, args.clip_skip), 0)
 
     if args.ckpt_every_n_minutes is None and args.save_every_n_epochs is None:
-        logging.info(f"{Fore.LIGHTCYAN_EX} No checkpoint saving specified, defaulting to every 20 minutes.{Style.RESET_ALL}")
+        print(f"{Fore.LIGHTCYAN_EX} No checkpoint saving specified, defaulting to every 20 minutes.{Style.RESET_ALL}")
         args.ckpt_every_n_minutes = 20
 
     if args.ckpt_every_n_minutes is None or args.ckpt_every_n_minutes < 1:
@@ -379,7 +382,7 @@ def setup_args(args):
         logging.warning(f"{Fore.LIGHTYELLOW_EX}** cond_dropout is set fairly high: {args.cond_dropout}, make sure this was intended{Style.RESET_ALL}")
 
     if args.grad_accum > 1:
-        logging.info(f"{Fore.CYAN} Batch size: {args.batch_size}, grad accum: {args.grad_accum}, 'effective' batch size: {args.batch_size * args.grad_accum}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN} Batch size: {args.batch_size}, grad accum: {args.grad_accum}, 'effective' batch size: {args.batch_size * args.grad_accum}{Style.RESET_ALL}")
 
 
     if args.save_ckpt_dir is not None and not os.path.exists(args.save_ckpt_dir):
@@ -388,7 +391,7 @@ def setup_args(args):
     if args.rated_dataset:
         args.rated_dataset_target_dropout_percent = min(max(args.rated_dataset_target_dropout_percent, 0), 100)
 
-        logging.info(logging.info(f"{Fore.CYAN} * Activating rated images learning with a target rate of {args.rated_dataset_target_dropout_percent}% {Style.RESET_ALL}"))
+        print(print(f"{Fore.CYAN} * Activating rated images learning with a target rate of {args.rated_dataset_target_dropout_percent}% {Style.RESET_ALL}"))
 
     args.aspects = aspects.get_aspect_buckets(args.resolution)
 
@@ -442,8 +445,8 @@ def report_image_train_item_problems(log_folder: str, items: list[ImageTrainItem
                             f"more images with aspect ratio {aspect_ratio_description}{batch_id_description}, or reducing your batch_size.")
 
 def resolve_image_train_items(args: argparse.Namespace) -> list[ImageTrainItem]:
-    logging.info(f"* DLMA resolution {args.resolution}, buckets: {args.aspects}")
-    logging.info(" Preloading images...")
+    print(f"* DLMA resolution {args.resolution}, buckets: {args.aspects}")
+    print(" Preloading images...")
 
     resolved_items = resolver.resolve(args.data_root, args)
     image_paths = set(map(lambda item: item.pathname, resolved_items))
@@ -576,7 +579,7 @@ def main(args):
     if args.seed == -1:
         args.seed = random.randint(0, 2**30)
     seed = args.seed
-    logging.info(f" Seed: {seed}")
+    print(f" Seed: {seed}")
     set_seed(seed)
     if torch.cuda.is_available():
         device = torch.device(f"cuda:{args.gpuid}")
@@ -690,16 +693,16 @@ def main(args):
         if (args.amp and is_sd1attn) or (not is_sd1attn):
             try:
                 unet.enable_xformers_memory_efficient_attention()
-                logging.info("Enabled xformers")
+                print("Enabled xformers")
             except Exception as ex:
                 logging.warning("failed to load xformers, using default SDP attention instead")
                 pass
         elif (args.disable_amp and is_sd1attn):
-            logging.info("AMP is disabled but model is SD1.X, xformers is incompatible so using default attention")
+            print("AMP is disabled but model is SD1.X, xformers is incompatible so using default attention")
     elif args.attn_type == "slice":
         unet.set_attention_slice("auto")
     else:
-        logging.info("* Using SDP attention *")
+        print("* Using SDP attention *")
 
     vae = vae.to(device, dtype=torch.float16 if args.amp else torch.float32)
     unet = unet.to(device, dtype=torch.float32)
@@ -711,7 +714,7 @@ def main(args):
 
     if use_ema_dacay_training:
         if not ema_model_loaded_from_file:
-            logging.info(f"EMA decay enabled, creating EMA model.")
+            print(f"EMA decay enabled, creating EMA model.")
 
             with torch.no_grad():
                 if args.ema_device == device:
@@ -738,7 +741,7 @@ def main(args):
         #unet = torch.compile(unet, mode="max-autotune")
         #text_encoder = torch.compile(text_encoder, mode="max-autotune")
         #vae = torch.compile(vae, mode="max-autotune")
-        #logging.info("Successfully compiled models")
+        #print("Successfully compiled models")
     except Exception as ex:
         logging.warning(f"Failed to compile model, continuing anyway, ex: {ex}")
         pass
@@ -792,7 +795,7 @@ def main(args):
     if args.plugins is not None:
         plugins = [load_plugin(name) for name in args.plugins]
     else:
-        logging.info("No plugins specified")
+        print("No plugins specified")
         plugins = []
 
     from plugins.plugins import PluginRunner
@@ -830,9 +833,9 @@ def main(args):
             total_number_of_ema_update: float = total_number_of_steps / args.ema_update_interval
             args.ema_decay_rate = args.ema_strength_target ** (1 / total_number_of_ema_update)
 
-            logging.info(f"ema_strength_target is {args.ema_strength_target}, calculated ema_decay_rate will be: {args.ema_decay_rate}.")
+            print(f"ema_strength_target is {args.ema_strength_target}, calculated ema_decay_rate will be: {args.ema_decay_rate}.")
 
-        logging.info(
+        print(
             f"EMA decay enabled, with ema_decay_rate {args.ema_decay_rate}, ema_update_interval: {args.ema_update_interval}, ema_device: {args.ema_device}.")
 
     ed_optimizer = EveryDreamOptimizer(args,
@@ -897,24 +900,24 @@ def main(args):
 
     if gpu is not None:
         gpu_used_mem, gpu_total_mem = gpu.get_gpu_memory()
-        logging.info(f" Pretraining GPU Memory: {gpu_used_mem} / {gpu_total_mem} MB")
-    logging.info(f" saving ckpts every {args.ckpt_every_n_minutes} minutes")
-    logging.info(f" saving ckpts every {args.save_every_n_epochs } epochs")
+        print(f" Pretraining GPU Memory: {gpu_used_mem} / {gpu_total_mem} MB")
+    print(f" saving ckpts every {args.ckpt_every_n_minutes} minutes")
+    print(f" saving ckpts every {args.save_every_n_epochs } epochs")
 
     train_dataloader = build_torch_dataloader(train_batch, batch_size=args.batch_size)
 
     unet.train() if (args.gradient_checkpointing or not args.disable_unet_training) else unet.eval()
     text_encoder.train() if not args.disable_textenc_training else text_encoder.eval()
 
-    logging.info(f" unet device: {unet.device}, precision: {unet.dtype}, training: {unet.training}")
-    logging.info(f" text_encoder device: {text_encoder.device}, precision: {text_encoder.dtype}, training: {text_encoder.training}")
-    logging.info(f" vae device: {vae.device}, precision: {vae.dtype}, training: {vae.training}")
-    logging.info(f" scheduler: {noise_scheduler.__class__}")
+    print(f" unet device: {unet.device}, precision: {unet.dtype}, training: {unet.training}")
+    print(f" text_encoder device: {text_encoder.device}, precision: {text_encoder.dtype}, training: {text_encoder.training}")
+    print(f" vae device: {vae.device}, precision: {vae.dtype}, training: {vae.training}")
+    print(f" scheduler: {noise_scheduler.__class__}")
 
-    logging.info(f" {Fore.GREEN}Project name: {Style.RESET_ALL}{Fore.LIGHTGREEN_EX}{args.project_name}{Style.RESET_ALL}")
-    logging.info(f" {Fore.GREEN}grad_accum: {Style.RESET_ALL}{Fore.LIGHTGREEN_EX}{args.grad_accum}{Style.RESET_ALL}"),
-    logging.info(f" {Fore.GREEN}batch_size: {Style.RESET_ALL}{Fore.LIGHTGREEN_EX}{args.batch_size}{Style.RESET_ALL}")
-    logging.info(f" {Fore.GREEN}epoch_len: {Fore.LIGHTGREEN_EX}{epoch_len}{Style.RESET_ALL}")
+    print(f" {Fore.GREEN}Project name: {Style.RESET_ALL}{Fore.LIGHTGREEN_EX}{args.project_name}{Style.RESET_ALL}")
+    print(f" {Fore.GREEN}grad_accum: {Style.RESET_ALL}{Fore.LIGHTGREEN_EX}{args.grad_accum}{Style.RESET_ALL}"),
+    print(f" {Fore.GREEN}batch_size: {Style.RESET_ALL}{Fore.LIGHTGREEN_EX}{args.batch_size}{Style.RESET_ALL}")
+    print(f" {Fore.GREEN}epoch_len: {Fore.LIGHTGREEN_EX}{epoch_len}{Style.RESET_ALL}")
 
     epoch_pbar = tqdm(range(args.max_epochs), position=0, leave=True, dynamic_ncols=True)
     epoch_pbar.set_description(f"{Fore.LIGHTCYAN_EX}Epochs{Style.RESET_ALL}")
@@ -1270,10 +1273,10 @@ def main(args):
                 needs_save = False
                 if args.ckpt_every_n_minutes is not None and (min_since_last_ckpt > args.ckpt_every_n_minutes):
                     last_epoch_saved_time = time.time()
-                    logging.info(f"Saving model, {args.ckpt_every_n_minutes} mins at step {global_step}")
+                    print(f"Saving model, {args.ckpt_every_n_minutes} mins at step {global_step}")
                     needs_save = True
                 if epoch > 0 and epoch % args.save_every_n_epochs == 0 and step == 0 and epoch < args.max_epochs and epoch >= args.save_ckpts_from_n_epochs:
-                    logging.info(f" Saving model, {args.save_every_n_epochs} epochs at step {global_step}")
+                    print(f" Saving model, {args.save_every_n_epochs} epochs at step {global_step}")
                     needs_save = True
                 if needs_save:
                     save_path = make_save_path(epoch, global_step)
@@ -1330,9 +1333,9 @@ def main(args):
                    save_optimizer_flag=args.save_optimizer, save_ckpt=not args.no_save_ckpt)
 
         total_elapsed_time = time.time() - training_start_time
-        logging.info(f"{Fore.CYAN}Training complete{Style.RESET_ALL}")
-        logging.info(f"Total training time took {total_elapsed_time/60:.2f} minutes, total steps: {global_step}")
-        logging.info(f"Average epoch time: {np.mean([t['time'] for t in epoch_times]):.2f} minutes")
+        print(f"{Fore.CYAN}Training complete{Style.RESET_ALL}")
+        print(f"Total training time took {total_elapsed_time/60:.2f} minutes, total steps: {global_step}")
+        print(f"Average epoch time: {np.mean([t['time'] for t in epoch_times]):.2f} minutes")
 
     except Exception as ex:
         logging.error(f"{Fore.LIGHTYELLOW_EX}Something went wrong, attempting to save model{Style.RESET_ALL}")
@@ -1340,12 +1343,12 @@ def main(args):
         save_model(save_path, global_step=global_step, ed_state=make_current_ed_state(),
                    save_ckpt_dir=args.save_ckpt_dir, yaml_name=yaml, save_full_precision=args.save_full_precision,
                    save_optimizer_flag=args.save_optimizer, save_ckpt=not args.no_save_ckpt)
-        logging.info(f"{Fore.LIGHTYELLOW_EX}Model saved, re-raising exception and exiting.  Exception was:{Style.RESET_ALL}{Fore.LIGHTRED_EX} {ex} {Style.RESET_ALL}")
+        print(f"{Fore.LIGHTYELLOW_EX}Model saved, re-raising exception and exiting.  Exception was:{Style.RESET_ALL}{Fore.LIGHTRED_EX} {ex} {Style.RESET_ALL}")
         raise ex
 
-    logging.info(f"{Fore.LIGHTWHITE_EX} ***************************{Style.RESET_ALL}")
-    logging.info(f"{Fore.LIGHTWHITE_EX} **** Finished training ****{Style.RESET_ALL}")
-    logging.info(f"{Fore.LIGHTWHITE_EX} ***************************{Style.RESET_ALL}")
+    print(f"{Fore.LIGHTWHITE_EX} ***************************{Style.RESET_ALL}")
+    print(f"{Fore.LIGHTWHITE_EX} **** Finished training ****{Style.RESET_ALL}")
+    print(f"{Fore.LIGHTWHITE_EX} ***************************{Style.RESET_ALL}")
 
 
 if __name__ == "__main__":
