@@ -25,7 +25,9 @@ import os.path as osp
 import re
 from safetensors import safe_open
 from safetensors.torch import save_file
-
+from diffusers import StableDiffusionPipeline, AutoencoderKL, UNet2DConditionModel, DDIMScheduler, DDPMScheduler, \
+    DPMSolverMultistepScheduler, PNDMScheduler
+from transformers import CLIPTextModel, CLIPTokenizer
 import torch
 
 
@@ -323,6 +325,34 @@ def convert(model_path: str, checkpoint_path: str, half: bool):
             for key in f.keys():
                 text_enc_dict[key] = f.get_tensor(key)
 
+    # Easiest way to identify v2.0 model seems to be that the text encoder (OpenCLIP) is deeper
+    is_v20_model = "text_model.encoder.layers.22.layer_norm2.bias" in text_enc_dict
+
+    if is_v20_model:
+        # Need to add the tag 'transformer' in advance so we can knock it out from the final layer-norm
+        text_enc_dict = {"transformer." + k: v for k, v in text_enc_dict.items()}
+        text_enc_dict = convert_text_enc_state_dict_v20(text_enc_dict)
+        text_enc_dict = {"cond_stage_model.model." + k: v for k, v in text_enc_dict.items()}
+    else:
+        text_enc_dict = convert_text_enc_state_dict(text_enc_dict)
+        text_enc_dict = {"cond_stage_model.transformer." + k: v for k, v in text_enc_dict.items()}
+
+    # Put together new checkpoint
+    state_dict = {**unet_state_dict, **vae_state_dict, **text_enc_dict}
+    if half:
+        state_dict = {k: v.half() for k, v in state_dict.items()}
+    save_file(state_dict, checkpoint_path.replace(".ckpt", ".safetensors"))
+
+def convert_from_state(vae: AutoencoderKL, unet: UNet2DConditionModel, te:CLIPTextModel, checkpoint_path: str, half: bool):
+    assert checkpoint_path is not None, "Must provide a checkpoint path!"
+
+    unet_state_dict = convert_unet_state_dict(unet.state_dict())
+    unet_state_dict = {"model.diffusion_model." + k: v for k, v in unet_state_dict.items()}
+
+    vae_state_dict = convert_vae_state_dict(vae.state_dict())
+    vae_state_dict = {"first_stage_model." + k: v for k, v in vae_state_dict.items()}
+
+    text_enc_dict = te.state_dict()
     # Easiest way to identify v2.0 model seems to be that the text encoder (OpenCLIP) is deeper
     is_v20_model = "text_model.encoder.layers.22.layer_norm2.bias" in text_enc_dict
 

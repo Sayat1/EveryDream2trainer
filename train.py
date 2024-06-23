@@ -59,6 +59,7 @@ from data.every_dream_validation import EveryDreamValidator
 from data.image_train_item import ImageTrainItem, DEFAULT_BATCH_ID
 from utils.huggingface_downloader import try_download_model_from_hf
 from utils.convert_diff_to_ckpt import convert as converter
+from utils.convert_diff_to_ckpt import convert_from_state as converter_from_state
 from utils.isolate_rng import isolate_rng
 from utils.check_git import check_git
 from optimizer.optimizers import EveryDreamOptimizer
@@ -146,7 +147,7 @@ def save_model(save_path, ed_state: EveryDreamTrainingState, global_step: int, s
     Save the model to disk
     """
 
-    def save_ckpt_file(diffusers_model_path, sd_ckpt_path):
+    def save_ckpt_file(diffusers_model_path, sd_ckpt_path, sd_ckpt_path2, vae, unet, te):
         nonlocal save_ckpt_dir
         nonlocal save_full_precision
         nonlocal yaml_name
@@ -161,6 +162,7 @@ def save_model(save_path, ed_state: EveryDreamTrainingState, global_step: int, s
 
         logging.info(f" * Saving SD model to {sd_ckpt_full}")
         converter(model_path=diffusers_model_path, checkpoint_path=sd_ckpt_full, half=half)
+        converter_from_state(vae=vae, unet=unet, te=te, checkpoint_path=sd_ckpt_path2, half=half)
 
         if yaml_name and yaml_name != "v1-inference.yaml":
             yaml_save_path = f"{os.path.join(save_ckpt_dir, os.path.basename(diffusers_model_path))}.yaml"
@@ -190,8 +192,8 @@ def save_model(save_path, ed_state: EveryDreamTrainingState, global_step: int, s
 
         if save_ckpt:
             sd_ckpt_path_ema = f"{os.path.basename(save_path)}_ema.safetensors"
-
-            save_ckpt_file(diffusers_model_path, sd_ckpt_path_ema)
+            sd_ckpt_path_ema2 = f"{os.path.basename(save_path)}_ema_fromstate.safetensors"
+            save_ckpt_file(diffusers_model_path, sd_ckpt_path_ema, sd_ckpt_path_ema2, ed_state.vae, ed_state.unet_ema, ed_state.text_encoder_ema)
 
 
     pipeline = StableDiffusionPipeline(
@@ -204,14 +206,13 @@ def save_model(save_path, ed_state: EveryDreamTrainingState, global_step: int, s
         requires_safety_checker=None,  # avoid nag
         feature_extractor=None,  # must be none of no safety checker
     )
-
     diffusers_model_path = save_path
     logging.info(f" * Saving diffusers model to {diffusers_model_path}")
     pipeline.save_pretrained(diffusers_model_path)
-
     if save_ckpt:
         sd_ckpt_path = f"{os.path.basename(save_path)}.safetensors"
-        save_ckpt_file(diffusers_model_path, sd_ckpt_path)
+        sd_ckpt_path2 = f"{os.path.basename(save_path)}_fromstate.safetensors"
+        save_ckpt_file(diffusers_model_path, sd_ckpt_path, sd_ckpt_path2, ed_state.vae, ed_state.unet, ed_state.text_encoder)
 
     if save_optimizer_flag:
         logging.info(f" Saving optimizer state to {save_path}")
