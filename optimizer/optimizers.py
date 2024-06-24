@@ -327,6 +327,7 @@ class EveryDreamOptimizer():
         default_lr = 1e-6
         curr_lr = args.lr
         d0 = 1e-6 # dadapt
+        d_coef = 1.0 #prodigy
         decouple = True # seems bad to turn off, dadapt_adam only
         momentum = 0.0 # dadapt_sgd
         no_prox = False # ????, dadapt_adan
@@ -342,6 +343,7 @@ class EveryDreamOptimizer():
             optimizer_name = local_optimizer_config.get("optimizer", "adamw8bit")
             curr_lr = local_optimizer_config.get("lr", curr_lr)
             d0 = local_optimizer_config.get("d0", d0)
+            d_coef = local_optimizer_config.get("d_coef", d0)
             decouple = local_optimizer_config.get("decouple", decouple)
             momentum = local_optimizer_config.get("momentum", momentum)
             growth_rate = local_optimizer_config.get("growth_rate", growth_rate)
@@ -386,7 +388,9 @@ class EveryDreamOptimizer():
                     weight_decay=weight_decay,
                     use_bias_correction=use_bias_correction,
                     growth_rate=growth_rate,
+                    betas=(betas[0], betas[1]),
                     d0=d0,
+                    d_coef=d_coef,
                     safeguard_warmup=safeguard_warmup
                 )
             elif optimizer_name == "adamw":
