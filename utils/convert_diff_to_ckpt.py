@@ -175,9 +175,13 @@ vae_conversion_map_attn = [
     # (stable-diffusion, HF Diffusers)
     ("norm.", "group_norm."),
     ("q.", "query."),
+    ("q.", "to_q."),
     ("k.", "key."),
+    ("k.", "to_k."),
     ("v.", "value."),
+    ("v.", "to_v."),
     ("proj_out.", "proj_attn."),
+    ("proj_out.", "to_out.0."),
 ]
 
 
