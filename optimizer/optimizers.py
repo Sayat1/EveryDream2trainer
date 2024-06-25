@@ -27,7 +27,7 @@ from diffusers.optimization import get_scheduler
 from colorama import Fore, Style
 import pprint
 
-BETAS_DEFAULT = [0.9, 0.999]
+BETAS_DEFAULT = [0.9, 0.999, 0.9999]
 EPSILON_DEFAULT = 1e-8
 WEIGHT_DECAY_DEFAULT = 0.01
 LR_DEFAULT = 1e-6
@@ -328,6 +328,8 @@ class EveryDreamOptimizer():
         curr_lr = args.lr
         d0 = 1e-6 # dadapt
         d_coef = 1.0 #prodigy
+        beta3=0.9999
+        epsilons=(1e-30, 1e-16) #CAME
         decouple = True # seems bad to turn off, dadapt_adam only
         momentum = 0.0 # dadapt_sgd
         no_prox = False # ????, dadapt_adan
@@ -344,6 +346,7 @@ class EveryDreamOptimizer():
             curr_lr = local_optimizer_config.get("lr", curr_lr)
             d0 = local_optimizer_config.get("d0", d0)
             d_coef = local_optimizer_config.get("d_coef", d0)
+            epsilons = local_optimizer_config.get("epsilons", epsilons)
             decouple = local_optimizer_config.get("decouple", decouple)
             momentum = local_optimizer_config.get("momentum", momentum)
             growth_rate = local_optimizer_config.get("growth_rate", growth_rate)
@@ -392,6 +395,16 @@ class EveryDreamOptimizer():
                     d0=d0,
                     d_coef=d_coef,
                     safeguard_warmup=safeguard_warmup
+                )
+            elif optimizer_name == "came":
+                from came_pytorch import CAME
+                opt_class = CAME
+                optimizer = opt_class(
+                    itertools.chain(parameters),
+                    lr=curr_lr,
+                    weight_decay=weight_decay,
+                    betas=(betas[0], betas[1], betas[2]),
+                    eps=(epsilons[0], epsilon[1])
                 )
             elif optimizer_name == "adamw":
                 opt_class = torch.optim.AdamW
