@@ -244,7 +244,7 @@ class EveryDreamOptimizer():
         te_config["weight_decay"] = te_config.get("weight_decay", None) or base_config["weight_decay"]
         te_config["betas"] = te_config.get("betas", None) or base_config["betas"]
         te_config["epsilon"] = te_config.get("epsilon", None) or base_config["epsilon"]
-        te_config["epsilons"] = te_config.get("epsilons", None) or base_config["epsilons"]
+        te_config["epsilons"] = te_config.get("epsilons", None) or base_config.get("epsilons",None)
 
         return te_config, base_config
 
