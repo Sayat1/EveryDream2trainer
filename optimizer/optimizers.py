@@ -404,7 +404,7 @@ class EveryDreamOptimizer():
                     lr=curr_lr,
                     weight_decay=weight_decay,
                     betas=(betas[0], betas[1], betas[2]),
-                    eps=(epsilons[0], epsilon[1])
+                    eps=(epsilons[0], epsilons[1])
                 )
             elif optimizer_name == "adamw":
                 opt_class = torch.optim.AdamW
