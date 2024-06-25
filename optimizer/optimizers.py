@@ -244,6 +244,7 @@ class EveryDreamOptimizer():
         te_config["weight_decay"] = te_config.get("weight_decay", None) or base_config["weight_decay"]
         te_config["betas"] = te_config.get("betas", None) or base_config["betas"]
         te_config["epsilon"] = te_config.get("epsilon", None) or base_config["epsilon"]
+        te_config["epsilons"] = te_config.get("epsilons", None) or base_config["epsilons"]
 
         return te_config, base_config
 
@@ -328,8 +329,7 @@ class EveryDreamOptimizer():
         curr_lr = args.lr
         d0 = 1e-6 # dadapt
         d_coef = 1.0 #prodigy
-        beta3=0.9999
-        epsilons=(1e-30, 1e-16) #CAME
+        epsilons=[1e-30, 1e-16] #CAME
         decouple = True # seems bad to turn off, dadapt_adam only
         momentum = 0.0 # dadapt_sgd
         no_prox = False # ????, dadapt_adan
