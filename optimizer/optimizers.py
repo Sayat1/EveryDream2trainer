@@ -149,8 +149,10 @@ class EveryDreamOptimizer():
                 log_info_unet_fn = lambda n, label: self.log_writer.add_scalar(label, n, global_step)
                 log_info_te_fn = lambda n, label: self.log_writer.add_scalar(label, n, global_step)
                 with torch.no_grad():
-                    self._log_gradient_normal(self.unet_params, "optimizer/unet_grad_norm", log_info_unet_fn)
-                    self._log_gradient_normal(self.text_encoder_params, "optimizer/te_grad_norm", log_info_te_fn)
+                    if self.optimizer_unet:
+                        self._log_gradient_normal(self.unet_params, "optimizer/unet_grad_norm", log_info_unet_fn)
+                    if self.optimizer_te:
+                        self._log_gradient_normal(self.text_encoder_params, "optimizer/te_grad_norm", log_info_te_fn)
 
             self._zero_grad(set_to_none=True)
 
