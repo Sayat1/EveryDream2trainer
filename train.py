@@ -170,7 +170,7 @@ def save_model(save_path, ed_state: EveryDreamTrainingState, global_step: int, s
 
 
     if global_step is None or global_step == 0:
-        logging.warning("  No model to save, something likely blew up on startup, not saving")
+        print("  No model to save, something likely blew up on startup, not saving")
         return
 
     if ed_state.unet_ema is not None or ed_state.text_encoder_ema is not None:
@@ -335,7 +335,7 @@ def setup_args(args):
     Forces some args to be set based on others for compatibility reasons
     """
     if args.disable_amp:
-        logging.warning(f"{Fore.LIGHTYELLOW_EX} Disabling AMP, not recommended.{Style.RESET_ALL}")
+        print(f"{Fore.LIGHTYELLOW_EX} Disabling AMP, not recommended.{Style.RESET_ALL}")
         args.amp = False
     else:
         args.amp = True
@@ -372,11 +372,11 @@ def setup_args(args):
         args.save_every_n_epochs = _VERY_LARGE_NUMBER
 
     if args.save_every_n_epochs < _VERY_LARGE_NUMBER and args.ckpt_every_n_minutes < _VERY_LARGE_NUMBER:
-        logging.warning(f"{Fore.LIGHTYELLOW_EX}** Both save_every_n_epochs and ckpt_every_n_minutes are set, this will potentially spam a lot of checkpoints{Style.RESET_ALL}")
-        logging.warning(f"{Fore.LIGHTYELLOW_EX}** save_every_n_epochs: {args.save_every_n_epochs}, ckpt_every_n_minutes: {args.ckpt_every_n_minutes}{Style.RESET_ALL}")
+        print(f"{Fore.LIGHTYELLOW_EX}** Both save_every_n_epochs and ckpt_every_n_minutes are set, this will potentially spam a lot of checkpoints{Style.RESET_ALL}")
+        print(f"{Fore.LIGHTYELLOW_EX}** save_every_n_epochs: {args.save_every_n_epochs}, ckpt_every_n_minutes: {args.ckpt_every_n_minutes}{Style.RESET_ALL}")
 
     if args.cond_dropout > 0.26:
-        logging.warning(f"{Fore.LIGHTYELLOW_EX}** cond_dropout is set fairly high: {args.cond_dropout}, make sure this was intended{Style.RESET_ALL}")
+        print(f"{Fore.LIGHTYELLOW_EX}** cond_dropout is set fairly high: {args.cond_dropout}, make sure this was intended{Style.RESET_ALL}")
 
     if args.grad_accum > 1:
         print(f"{Fore.CYAN} Batch size: {args.batch_size}, grad accum: {args.grad_accum}, 'effective' batch size: {args.batch_size * args.grad_accum}{Style.RESET_ALL}")
@@ -388,7 +388,7 @@ def setup_args(args):
     if args.rated_dataset:
         args.rated_dataset_target_dropout_percent = min(max(args.rated_dataset_target_dropout_percent, 0), 100)
 
-        print(print(f"{Fore.CYAN} * Activating rated images learning with a target rate of {args.rated_dataset_target_dropout_percent}% {Style.RESET_ALL}"))
+        print(f"{Fore.CYAN} * Activating rated images learning with a target rate of {args.rated_dataset_target_dropout_percent}% {Style.RESET_ALL}")
 
     args.aspects = aspects.get_aspect_buckets(args.resolution)
 
@@ -404,8 +404,8 @@ def report_image_train_item_problems(log_folder: str, items: list[ImageTrainItem
     undersized_items = [item for item in items if item.is_undersized]
     if len(undersized_items) > 0:
         underized_log_path = os.path.join(log_folder, "undersized_images.txt")
-        logging.warning(f"{Fore.LIGHTRED_EX} ** Some images are smaller than the target size, consider using larger images{Style.RESET_ALL}")
-        logging.warning(f"{Fore.LIGHTRED_EX} ** Check {underized_log_path} for more information.{Style.RESET_ALL}")
+        print(f"{Fore.LIGHTRED_EX} ** Some images are smaller than the target size, consider using larger images{Style.RESET_ALL}")
+        print(f"{Fore.LIGHTRED_EX} ** Check {underized_log_path} for more information.{Style.RESET_ALL}")
         with open(underized_log_path, "w", encoding='utf-8') as undersized_images_file:
             undersized_images_file.write(f" The following images are smaller than the target size, consider removing or sourcing a larger copy:")
             for undersized_item in undersized_items:
@@ -436,7 +436,7 @@ def report_image_train_item_problems(log_folder: str, items: list[ImageTrainItem
             aspect_ratio_description = f"{aspect_ratio_rational[0]}:{aspect_ratio_rational[1]}"
             batch_id_description = "" if ar_bucket[0] == DEFAULT_BATCH_ID else f" for batch id '{ar_bucket[0]}'"
             effective_multiplier = round(1 + bucket_dupe_ratio, 1)
-            logging.warning(f" * {Fore.LIGHTRED_EX}Aspect ratio bucket {ar_bucket} has only {count} "
+            print(f" * {Fore.LIGHTRED_EX}Aspect ratio bucket {ar_bucket} has only {count} "
                             f"images{Style.RESET_ALL}. At batch size {batch_size} this makes for an effective multiplier "
                             f"of {effective_multiplier}, which may cause problems. Consider adding {runt_size} or "
                             f"more images with aspect ratio {aspect_ratio_description}{batch_id_description}, or reducing your batch_size.")
@@ -519,7 +519,7 @@ def compute_snr(timesteps, noise_scheduler):
     alphas_cumprod = noise_scheduler.alphas_cumprod
     # Use .any() to check if any elements in the tensor are zero
     if (alphas_cumprod[:-1] == 0).any():
-        logging.warning(
+        print(
             f"Alphas cumprod has zero elements! Resetting to {minimal_value}.."
         )
         alphas_cumprod[alphas_cumprod[:-1] == 0] = minimal_value
@@ -583,7 +583,7 @@ def main(args):
         gpu = GPU(device)
         torch.backends.cudnn.benchmark = True
     else:
-        logging.warning("*** Running on CPU. This is for testing loading/config parsing code only.")
+        print("*** Running on CPU. This is for testing loading/config parsing code only.")
         device = 'cpu'
         gpu = None
 
@@ -692,7 +692,7 @@ def main(args):
                 unet.enable_xformers_memory_efficient_attention()
                 print("Enabled xformers")
             except Exception as ex:
-                logging.warning("failed to load xformers, using default SDP attention instead")
+                print("failed to load xformers, using default SDP attention instead")
                 pass
         elif (args.disable_amp and is_sd1attn):
             print("AMP is disabled but model is SD1.X, xformers is incompatible so using default attention")
@@ -740,14 +740,14 @@ def main(args):
         #vae = torch.compile(vae, mode="max-autotune")
         #print("Successfully compiled models")
     except Exception as ex:
-        logging.warning(f"Failed to compile model, continuing anyway, ex: {ex}")
+        print(f"Failed to compile model, continuing anyway, ex: {ex}")
         pass
 
     try:
         torch.set_float32_matmul_precision('high')
         torch.backends.cudnn.allow_tf32 = True
     except Exception as ex:
-        logging.warning(f"Failed to set float32 matmul precision, continuing anyway, ex: {ex}")
+        print(f"Failed to set float32 matmul precision, continuing anyway, ex: {ex}")
         pass
 
     optimizer_config = None
