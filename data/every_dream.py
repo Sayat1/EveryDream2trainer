@@ -69,7 +69,7 @@ class EveryDreamBatch(Dataset):
         self.name = name
 
         num_images = len(self.image_train_items)
-        logging.info(f" ** Dataset '{name}': {num_images / self.batch_size:.0f} batches, num_images: {num_images}, batch_size: {self.batch_size}")
+        print(f" ** Dataset '{name}': {num_images / self.batch_size:.0f} batches, num_images: {num_images}, batch_size: {self.batch_size}")
 
     def shuffle(self, epoch_n: int, max_epochs: int):
         self.seed += 1
@@ -156,7 +156,7 @@ class DataLoaderWithFixedBuffer(torch.utils.data.DataLoader):
 
         buffer_tensor = torch.empty(buffer_size, dtype=buffer_dtype, device=device).pin_memory()
         self.buffer_tensor = buffer_tensor
-        logging.info(f"buffer_tensor created with shape: {buffer_tensor.shape}")
+        print(f"buffer_tensor created with shape: {buffer_tensor.shape}")
 
         super().__init__(dataset, batch_size=batch_size, shuffle=False, num_workers=min(batch_size, os.cpu_count()), collate_fn=self.fixed_collate_fn)
 
