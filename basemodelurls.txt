@@ -1,0 +1,19 @@
+emilianJR/chilloutmix_NiPrunedFp32Fix
+
+realisticVisionV60B1_v51VAE
+https://civitai.com/api/download/models/130072?type=Model&format=SafeTensor&size=full&fp=fp16
+
+CyberRealistic v5
+https://civitai.com/api/download/models/537505?type=Model&format=SafeTensor&size=pruned&fp=fp32
+
+Henmix_Real v6b
+https://civitai.com/api/download/models/489109?type=Model&format=SafeTensor&size=full&fp=fp32
+
+majicMIX realistic v7
+https://civitai.com/api/download/models/176425?type=Model&format=SafeTensor&size=pruned&fp=fp16
+
+RealCartoon3D v16
+https://civitai.com/api/download/models/525071?type=Model&format=SafeTensor&size=full&fp=fp16
+
+LEOSAM's Film grain2.0
+https://civitai.com/api/download/models/113623?type=Model&format=SafeTensor&size=full&fp=fp16
