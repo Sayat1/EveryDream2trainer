@@ -20,6 +20,6 @@ def get_rex_schedule(
             decay_steps = num_training_steps - num_warmup_steps
             progress = (current_step / decay_steps)
             div = (1 - d) + (d * (1 - progress))
-            return 0.0 + (1 - 0.0) * ((1 - progress) / div)
+            return max(0.0 , 0.0 + (1 - 0.0) * ((1 - progress) / div))
         
     return LambdaLR(optimizer, lr_lambda, last_epoch)

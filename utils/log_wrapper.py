@@ -67,7 +67,7 @@ class LogWrapper():
         updates the vram usage for the epoch
         """
         gpu_used_mem, gpu_total_mem = gpu.get_gpu_memory()
-        self.add_scalar("performance/vram", gpu_used_mem, global_step)
+        #self.add_scalar("performance/vram", gpu_used_mem, global_step)
         epoch_mem_color = Style.RESET_ALL
         if gpu_used_mem > 0.93 * gpu_total_mem:
             epoch_mem_color = Fore.LIGHTRED_EX

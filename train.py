@@ -286,7 +286,7 @@ def append_epoch_log(global_step: int, epoch_pbar, gpu, log_writer, **logs):
     """
     if gpu is not None:
         gpu_used_mem, gpu_total_mem = gpu.get_gpu_memory()
-        log_writer.add_scalar("performance/vram", gpu_used_mem, global_step)
+        #log_writer.add_scalar("performance/vram", gpu_used_mem, global_step)
         epoch_mem_color = Style.RESET_ALL
         if gpu_used_mem > 0.93 * gpu_total_mem:
             epoch_mem_color = Fore.LIGHTRED_EX
@@ -1253,7 +1253,7 @@ def main(args):
                     images_per_sec_log_step = []
                     if args.amp:
                         log_writer.add_scalar(tag="hyperparameter/grad scale", scalar_value=ed_optimizer.get_scale(), global_step=global_step)
-                    log_writer.add_scalar(tag="performance/images per second", scalar_value=avg, global_step=global_step)
+                    #log_writer.add_scalar(tag="performance/images per second", scalar_value=avg, global_step=global_step)
 
                     logs = {"loss/log_step": loss_step, "lr_unet": lr_unet, "lr_te": lr_textenc, "img/s": images_per_sec}
                     append_epoch_log(global_step=global_step, epoch_pbar=epoch_pbar, gpu=gpu, log_writer=log_writer, **logs)
@@ -1299,7 +1299,7 @@ def main(args):
 
             elapsed_epoch_time = (time.time() - epoch_start_time) / 60
             epoch_times.append(dict(epoch=epoch, time=elapsed_epoch_time))
-            log_writer.add_scalar("performance/minutes per epoch", elapsed_epoch_time, global_step)
+            #log_writer.add_scalar("performance/minutes per epoch", elapsed_epoch_time, global_step)
 
             plugin_runner.run_on_epoch_end(epoch=epoch,
                                            global_step=global_step,
