@@ -23,7 +23,7 @@ from typing import Generator, Any
 import torch
 from torch.cuda.amp import autocast, GradScaler
 from diffusers.optimization import get_scheduler
-import REX
+from . import REX
 
 from colorama import Fore, Style
 import pprint
@@ -258,35 +258,35 @@ class EveryDreamOptimizer():
         ret_val = []
 
         if self.optimizer_te is not None:
-            if args.lr_scheduler in ["rex"]:
+            if te_config.get("lr_scheduler", args.lr_scheduler) in ["rex"]:
                 lr_scheduler = REX.get_rex_schedule(
                     optimizer=self.optimizer_te,
-                    num_warmup_steps=int(te_config.get("lr_warmup_steps", None) or unet_config.get("lr_warmup_steps",0)),
-                    num_training_steps=int(te_config.get("lr_decay_steps", None) or unet_config.get("lr_decay_steps",1e9))
+                    num_warmup_steps=int(te_config.get("lr_warmup_steps", None) or te_config.get("lr_warmup_steps",0)),
+                    num_training_steps=int(te_config.get("lr_decay_steps", None) or te_config.get("lr_decay_steps",1e9))
                 )
             else:
                 lr_scheduler = get_scheduler(
                     te_config.get("lr_scheduler", args.lr_scheduler),
                     optimizer=self.optimizer_te,
-                    num_warmup_steps=int(te_config.get("lr_warmup_steps", None) or unet_config.get("lr_warmup_steps",0)),
-                    num_training_steps=int(te_config.get("lr_decay_steps", None) or unet_config.get("lr_decay_steps",1e9))
+                    num_warmup_steps=int(te_config.get("lr_warmup_steps", None) or te_config.get("lr_warmup_steps",0)),
+                    num_training_steps=int(te_config.get("lr_decay_steps", None) or te_config.get("lr_decay_steps",1e9))
                 )
             ret_val.append(lr_scheduler)    
 
         if self.optimizer_unet is not None:
             unet_config = optimizer_config["base"]
-            if args.lr_scheduler in ["rex"]:
+            if unet_config.get("lr_scheduler", args.lr_scheduler) in ["rex"]:
                 lr_scheduler = REX.get_rex_schedule(
-                    optimizer=self.optimizer_te,
-                    num_warmup_steps=int(te_config.get("lr_warmup_steps", None) or unet_config.get("lr_warmup_steps",0)),
-                    num_training_steps=int(te_config.get("lr_decay_steps", None) or unet_config.get("lr_decay_steps",1e9))
+                    optimizer=self.optimizer_unet,
+                    num_warmup_steps=int(unet_config.get("lr_warmup_steps", None) or unet_config.get("lr_warmup_steps",0)),
+                    num_training_steps=int(unet_config.get("lr_decay_steps", None) or unet_config.get("lr_decay_steps",1e9))
                 )
             else:
                 lr_scheduler = get_scheduler(
-                    te_config.get("lr_scheduler", args.lr_scheduler),
-                    optimizer=self.optimizer_te,
-                    num_warmup_steps=int(te_config.get("lr_warmup_steps", None) or unet_config.get("lr_warmup_steps",0)),
-                    num_training_steps=int(te_config.get("lr_decay_steps", None) or unet_config.get("lr_decay_steps",1e9))
+                    unet_config.get("lr_scheduler", args.lr_scheduler),
+                    optimizer=self.optimizer_unet,
+                    num_warmup_steps=int(unet_config.get("lr_warmup_steps", None) or unet_config.get("lr_warmup_steps",0)),
+                    num_training_steps=int(unet_config.get("lr_decay_steps", None) or unet_config.get("lr_decay_steps",1e9))
                 )
             ret_val.append(lr_scheduler)
         return ret_val
